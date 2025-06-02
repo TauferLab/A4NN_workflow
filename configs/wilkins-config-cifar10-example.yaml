@@ -1,0 +1,60 @@
+tasks:
+  - func: "./nsganet_singlenode_search.py"
+    args: ["--config", "../configs/nas-config-cifar10-example.json"]
+    nprocs: 1
+    actions: ["engine_actions", "train_callback"]
+    inports:
+      - filename: "*penguin.h5"
+        dsets:
+          - name: "*"
+            passthru: 1
+            metadata: 0
+      - filename: "*local*.h5"
+        dsets:
+          - name: "*"
+            passthru: 1
+            metadata: 0
+    outports:
+      - filename: "*global*.h5"
+        dsets:
+          - name: "*"
+            passthru: 1
+            metadata: 0
+      - filename: "*training.h5"
+        dsets:
+          - name: "*"
+            passthru: 1
+            metadata: 0
+  - func: "./penguin_driver.py"
+    args: ["--config", "../configs/nas-config-cifar10-example.json"]
+    nprocs: 1
+    actions: ["engine_actions", "penguin_callback"]
+    inports:
+      - filename: "*training.h5"
+        dsets:
+          - name: "*"
+            passthru: 1
+            metadata: 0
+    outports:
+      - filename: "*penguin.h5"
+        dsets:
+          - name: "*"
+            passthru: 1
+            metadata: 0
+  - func: "./vinarch_driver.py"
+    args: ["--config", "../configs/nas-config-cifar10-example.json"]
+    nprocs: 1
+    actions: ["engine_actions", "vinarch_callback"]
+    inports:
+      - filename: "*global*.h5"
+        dsets:
+          - name: "*"
+            passthru: 1
+            metadata: 0
+    outports:
+      - filename: "*local*.h5"
+        dsets:
+          - name: "*"
+            passthru: 1
+            metadata: 0
+

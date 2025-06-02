@@ -1,0 +1,41 @@
+{
+    "io_params": {
+        "save_dir": "/path_to_models/nas_models/cifar10", 
+        "save_models": true,
+        "data_root": "/path_to_datasets/datasets/cifar10", 
+        "dataset": "CIFAR-10"
+    },
+    "search_params": {
+        "seed": 32,
+        "pop_size":5,
+        "n_gens": 5,
+        "n_offspring": 5
+    },
+    "macro_params": {
+        "n_nodes": 4,
+        "n_phases": 3
+    },
+    "train_params": {
+        "init_channels": 32,
+        "epochs": 10
+    },
+    "penguin_params": {
+        "penguin":true,
+        "stop_if_converged":true,
+        "peng_freq":1
+    },
+    "vinarch_params": {
+        "vinarch":true,
+        "stop_if_converged":true,
+        "graph_kernels":[
+            {
+                "name":"ged"
+            }
+        ],
+        "distance_metrics": [],
+        "threshold": 2,
+        "is_metric_similarity": false,
+        "metric_norm": false,
+        "comparison_window": -1
+    }
+}
