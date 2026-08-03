@@ -64,7 +64,12 @@ This repository includes example task definitions, configuration files, and scri
     spack install wilkins
     ```
 
-4. Use the `create_env.sh` script in the repository to create a spack environment to run A4NN using Wilkins. Feel free to modify the `env.yaml` to add additional package specs or indicate other package versions.
+    Note: For Wilkins, this software has been tested with commit 29be2b1
+    ```bash
+    git checkout 29be2b1
+    ```
+
+5. Use the `create_env.sh` script in the repository to create a spack environment to run A4NN using Wilkins. Feel free to modify the `env.yaml` to add additional package specs or indicate other package versions.
 
     ```bash
     # Clone repo and create spack environment
