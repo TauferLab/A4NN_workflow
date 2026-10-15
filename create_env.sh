@@ -15,7 +15,10 @@ spack env activate $SPACKENV
 
 spack add lowfive
 
-spack develop wilkins@master build_type=Debug
+git -C /path/to/wilkins fetch origin
+git -C /path/to/wilkins checkout 29be2b1
+spack develop --no-clone -p /path/to/wilkins wilkins@master build_type=Debug
+
 spack add wilkins
 
 spack add henson+python+mpi-wrappers

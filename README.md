@@ -59,28 +59,34 @@ This repository includes example task definitions, configuration files, and scri
     spack info wilkins
     spack info lowfive
     ```
-    Then install Wilkins
-    ```bash
-    spack install wilkins
-    ```
 
-    Note: For Wilkins, this software has been tested with commit 29be2b1
-    ```bash
-    git checkout 29be2b1
-    ```
 
-5. Use the `create_env.sh` script in the repository to create a spack environment to run A4NN using Wilkins. Feel free to modify the `env.yaml` to add additional package specs or indicate other package versions.
+4. Use the `create_env.sh` script in the repository to create a spack environment to run A4NN using Wilkins. Feel free to modify the `env.yaml` to add additional package specs or indicate other package versions.
 
     ```bash
     # Clone repo and create spack environment
     git clone git@github.com:TauferLab/A4NN_workflow.git
     cd A4NN_workflow/
+    ```
+
+    **Before running `create_env.sh`, update the Wilkins path.** `create_env.sh` builds Wilkins from a local clone pinned to a tested commit. Edit these lines to use the folder where you cloned Wilkins (in step 3) , replacing `/path/to/wilkins` in all three places:
+
+    ```bash
+    git -C /path/to/wilkins fetch origin
+    git -C /path/to/wilkins checkout 29be2b1
+    spack develop --no-clone -p /path/to/wilkins wilkins@master build_type=Debug
+    ```
+    ```bash
     source ./create_env.sh
     ```
     PyTorch and several additional libraries must be installed using `pip`. After activating the environment, install these dependencies as follows:
     ```bash
     spack env activate <name-of-the-environment>
     spack load py-pip
+    # Install helper packages from PyPI first. The PyTorch index does not
+    # carry a usable copy of typing-extensions, so pip would otherwise try
+    # to build it and fail.
+    python -m pip install "typing-extensions>=4.10" filelock
 
     # Install PyTorch for CPU
     python -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
