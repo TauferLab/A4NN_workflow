@@ -1,8 +1,8 @@
 {
     "io_params": {
-        "save_dir": "/path_to_models/nas_models/cifar10", 
+        "save_dir": "/home/exouser/a4nn_data/models/nas_models/cifar10", 
         "save_models": true,
-        "data_root": "/path_to_datasets/datasets/cifar10", 
+        "data_root": "/home/exouser/a4nn_data/datasets/datasets/cifar10", 
         "dataset": "CIFAR-10"
     },
     "search_params": {

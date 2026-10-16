@@ -15,9 +15,9 @@ spack env activate $SPACKENV
 
 spack add lowfive
 
-git -C /path/to/wilkins fetch origin
-git -C /path/to/wilkins checkout 29be2b1
-spack develop --no-clone -p /path/to/wilkins wilkins@master build_type=Debug
+git -C /home/exouser/wilkins fetch origin
+git -C /home/exouser/wilkins checkout 29be2b1
+spack develop --no-clone -p /home/exouser/wilkins wilkins@master build_type=Debug
 
 spack add wilkins
 
