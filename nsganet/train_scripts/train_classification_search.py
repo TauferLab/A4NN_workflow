@@ -25,11 +25,58 @@ from nsganet.misc import save_model
 # import utilities to count number of flops
 from nsganet.misc.flops_counter import add_flops_counting_methods
 
+# optional NVML support for logging GPU energy (provided by nvidia-ml-py)
+try:
+    import pynvml
+except ImportError:
+    pynvml = None
+
 # set device to GPU if available
 if torch.cuda.is_available():
     device = "cuda"
 else:
     device="cpu"
+
+
+def init_gpu_energy():
+    """
+    Get an NVML handle for the training GPU so its energy counter can be read
+
+    :return: the NVML handle, or None if GPU energy is not available (training continues either way)
+    """
+    if pynvml is None or device != "cuda":
+        print("GPU energy logging disabled: pynvml not installed or no GPU; epoch_energy will be NaN")
+        return None
+    try:
+        pynvml.nvmlInit()
+        # Match the torch device to the NVML device by PCI bus ID, since the indices can differ when CUDA_VISIBLE_DEVICES is set
+        props = torch.cuda.get_device_properties(torch.cuda.current_device())
+        if hasattr(props, 'pci_bus_id'):
+            bus_id = f"{props.pci_domain_id:08X}:{props.pci_bus_id:02X}:{props.pci_device_id:02X}.0"
+            handle = pynvml.nvmlDeviceGetHandleByPciBusId(bus_id)
+        else:
+            handle = pynvml.nvmlDeviceGetHandleByIndex(torch.cuda.current_device())
+        pynvml.nvmlDeviceGetTotalEnergyConsumption(handle) # check that the energy counter is supported
+        return handle
+    except pynvml.NVMLError as err:
+        print(f"GPU energy logging disabled: {err}; epoch_energy will be NaN")
+        return None
+
+
+def read_gpu_energy(handle):
+    """
+    Read the GPU's total energy counter
+
+    :param handle: NVML handle from init_gpu_energy
+    :return: total energy used by the GPU since the driver loaded, in joules (NaN if unavailable)
+    """
+    if handle is None:
+        return float('nan')
+    try:
+        torch.cuda.synchronize() # wait for queued GPU work so it is counted in the right epoch
+        return pynvml.nvmlDeviceGetTotalEnergyConsumption(handle) / 1000.0 # mJ -> J
+    except pynvml.NVMLError:
+        return float('nan')
 
 
 def main(genome, 
@@ -84,6 +131,7 @@ def main(genome,
     train_acc = None # store training acc
     valid_acc = None # store validation acc
     epoch_time = None # store the time to complete each epoch
+    epoch_energy = None # store the GPU energy (J) used by each epoch
 
     # ---- Read Penguin parameters ------ #
     use_penguin = penguin_args['penguin'] # flag whether to use penguin or not
@@ -196,6 +244,10 @@ def main(genome,
         h5f.close()
 
 
+    # ------ Set up GPU energy logging (log only; not returned to the NAS) --------- #
+    gpu_handle = init_gpu_energy()
+
+
     # ------ Start Model Training --------------------- #
     for epoch in range(epochs):
         # --------------------------------------------------#
@@ -273,7 +325,8 @@ def main(genome,
         # ---------------------------------------------#
         # Start of Model Training                      #
         # ---------------------------------------------#
-        epoch_start = time.perf_counter() # start time of training 
+        epoch_start = time.perf_counter() # start time of training
+        energy_start = read_gpu_energy(gpu_handle) # GPU energy counter at start of training
 
         # Dropout probability 
         model.droprate = drop_path_prob * epoch / epochs
@@ -298,6 +351,10 @@ def main(genome,
         # end time of training
         epoch_end = time.perf_counter()
         epoch_time = epoch_end-epoch_start
+
+        # GPU energy used by this epoch (NaN if the counter is unavailable)
+        epoch_energy = read_gpu_energy(gpu_handle) - energy_start
+        print('epoch_energy (J):', epoch_energy)
         # ---------------------------------------------#
         # End of Model Training                        #
         # ---------------------------------------------#
@@ -316,6 +373,8 @@ def main(genome,
             h5f.create_dataset('epoch', data=[epoch], maxshape=(None,))
             h5f.create_dataset('train_accs', data=[train_acc], maxshape=(None,))
             h5f.create_dataset('epoch_time', data=[epoch_time], maxshape=(None,))
+            h5f.create_dataset('epoch_energy', data=[epoch_energy], maxshape=(None,), dtype="float64")
+            h5f['epoch_energy'].attrs['units'] = 'J'
             h5f.create_dataset('val_accs', data=[valid_acc], maxshape=(None,))
             h5f.create_dataset('n_flops', data=[n_flops], maxshape=(None,), dtype="float64") # create a field for n_flops
             h5f.close()
@@ -335,6 +394,11 @@ def main(genome,
             new_size = time_ds.shape[0] + 1
             time_ds.resize((new_size,))
             time_ds[-1] = epoch_time
+
+            energy_ds = h5f['epoch_energy']
+            new_size = energy_ds.shape[0] + 1
+            energy_ds.resize((new_size,))
+            energy_ds[-1] = epoch_energy
 
             val_ds = h5f['val_accs']
             new_size = val_ds.shape[0] + 1

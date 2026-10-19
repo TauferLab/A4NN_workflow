@@ -96,6 +96,8 @@ This repository includes example task definitions, configuration files, and scri
     # Install additional libraries
     python -m pip install pydot==2.0.0 igraph==0.11.6
     python -m pip install scikit-learn
+    # Optional: log GPU energy per epoch (epoch_energy in training.h5 is NaN without it)
+    python -m pip install nvidia-ml-py
     ```
 
 ## Running example
